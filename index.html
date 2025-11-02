@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Let's Learn with Ankit Khare — Lesson Plan Builder</title>
+
+  <!-- Tailwind (play CDN for quick styling) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- FileSaver for Word export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <!-- PptxGenJS for PPT export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.8.0/pptxgen.bundle.min.js"></script>
+
+  <style>
+    /* Permanent dark theme + small customizations */
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1724;
+      --muted:#9aa7b4;
+      --accent: #f4c152; /* gold */
+      --accent2: #39d0c6; /* turquoise */
+      --card: #111827;
+    }
+    html,body{background:linear-gradient(180deg,var(--bg) 0%, #071021 100%); color:#e6eef6; font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;}
+    .glass{background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 6px 18px rgba(0,0,0,0.6);}
+    .accent{color:var(--accent)}
+    .btn {transition: transform .12s ease, box-shadow .12s ease;}
+    .btn:hover{transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.6);}
+    /* Print layout - include header on each page */
+    @media print{
+      body{background: white; color:black;}
+      .no-print{display:none !important;}
+      .print-header{display:block}
+      .page-break{page-break-after:always;}
+      @page { size: A4; margin: 18mm; }
+    }
+    .print-header{display:none; border-bottom:1px solid #ddd; padding-bottom:8px; margin-bottom:10px;}
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <div class="max-w-6xl mx-auto p-6">
+    <!-- Header -->
+    <header class="glass rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white">Let's Learn with <span class="accent">Ankit Khare</span></h1>
+        <p class="text-sm text-muted-600 mt-1" style="color:var(--muted)">Empowering Teachers, Inspiring Minds — Lesson Plan Builder (NCF • NEP 2020 • CBSE)</p>
+      </div>
+      <div class="flex gap-3 ml-auto no-print">
+        <button id="btnPdf" class="btn px-4 py-2 rounded-lg bg-[#1f2937] border border-white/6 text-white">Download PDF</button>
+        <button id="btnWord" class="btn px-4 py-2 rounded-lg bg-[#0ea5a3] text-black">Download Word</button>
+        <button id="btnPpt" class="btn px-4 py-2 rounded-lg bg-[#f59e0b] text-black">Download PPT</button>
+        <button id="btnPrint" class="btn px-4 py-2 rounded-lg bg-[#374151] text-white">Print Preview</button>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+      <!-- Builder (left/center) -->
+      <section class="lg:col-span-2 glass p-5 rounded-2xl">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold">Create / Edit Lesson Plan</h2>
+          <div class="text-sm text-gray-300">Saved locally in your browser</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <input id="inputGrade" placeholder="Grade (e.g., Grade 1 / Nursery)" class="p-3 rounded-lg bg-[#0b1220] border border-white/6" value="Grade 1">
+          <input id="inputSubject" placeholder="Subject (e.g., English)" class="p-3 rounded-lg bg-[#0b1220] border border-white/6" value="English">
+        </div>
+
+        <label class="text-sm text-gray-300">Duration / Time</label>
+        <input id="inputDuration" class="p-2 rounded-md w-full mb-3 bg-[#0b1220] border border-white/6" value="40 minutes">
+
+        <label class="text-sm text-gray-300">Learning Outcomes (measurable)</label>
+        <textarea id="inputOutcomes" rows="3" class="w-full p-3 rounded-lg mb-3 bg-[#0b1220] border border-white/6" placeholder="Enter measurable outcomes..."></textarea>
+
+        <label class="text-sm text-gray-300">Key Competencies</label>
+        <input id="inputCompetencies" class="p-2 rounded-md w-full mb-3 bg-[#0b1220] border border-white/6" placeholder="e.g., Critical thinking, Communication">
+
+        <label class="text-sm text-gray-300">Prior knowledge / Links to Curriculum</label>
+        <textarea id="inputPrior" rows="2" class="w-full p-3 rounded-lg mb-3 bg-[#0b1220] border border-white/6"></textarea>
+
+        <label class="text-sm text-gray-300">Classroom Activities (step-by-step)</label>
+        <textarea id="inputActivities" rows="4" class="w-full p-3 rounded-lg mb-3 bg-[#0b1220] border border-white/6">1. Warm-up / hook
+2. Guided practice
+3. Independent practice
+4. Assessment / Reflection</textarea>
+
+        <div class="flex gap-2 mb-3">
+          <button id="btnAddActivitySample" class="btn px-4 py-2 rounded-lg bg-[#1f2937]">Add sample activity</button>
+          <button id="btnQuickNursery" class="btn px-4 py-2 rounded-lg bg-[#065f46]">Quick-fill: Nursery Literacy</button>
+          <button id="btnBrain" class="btn px-4 py-2 rounded-lg bg-[#7c3aed]">Brainstorm Session</button>
+        </div>
+
+        <label class="text-sm text-gray-300">Assessment / Evidence</label>
+        <textarea id="inputAssessment" rows="2" class="w-full p-3 rounded-lg mb-3 bg-[#0b1220] border border-white/6"></textarea>
+
+        <label class="text-sm text-gray-300">Differentiation / Inclusion</label>
+        <textarea id="inputDifferentiation" rows="2" class="w-full p-3 rounded-lg mb-3 bg-[#0b1220] border border-white/6"></textarea>
+
+        <label class="text-sm text-gray-300">Worksheet / Practice</label>
+        <textarea id="inputWorksheet" rows="6" class="w-full p-3 rounded-lg mb-3 bg-[#0b1220] border border-white/6">1.
+2.
+3.</textarea>
+
+        <div class="flex gap-3 mb-3">
+          <button id="btnSave" class="btn px-4 py-2 rounded-lg bg-[#0b1220] border border-white/6">Save Lesson Plan</button>
+          <button id="btnCopy" class="btn px-4 py-2 rounded-lg bg-[#2563eb]">Copy to Clipboard</button>
+          <button id="btnClear" class="btn px-4 py-2 rounded-lg bg-[#ef4444]">Clear Form</button>
+        </div>
+
+        <!-- Quiz section -->
+        <div class="mt-4 p-4 rounded-lg border border-white/6 bg-[#091026]">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-lg font-semibold">Quiz — Auto-generate & Edit</h3>
+            <div class="text-sm text-gray-400">Editable template + share links</div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+            <select id="quizSubject" class="p-2 rounded-md bg-[#0b1220] border border-white/6">
+              <option>English</option>
+              <option>Math</option>
+              <option>Science</option>
+              <option>Social</option>
+              <option>General</option>
+            </select>
+            <button id="btnGenQuiz" class="btn px-3 py-2 rounded-lg bg-[#059669]">Auto-Generate Quiz Template</button>
+          </div>
+          <textarea id="quizTemplate" rows="6" class="w-full p-3 rounded-lg mb-2 bg-[#0b1220] border border-white/6" placeholder="Quiz template will appear here..."></textarea>
+          <div class="flex gap-2 items-center">
+            <button id="btnQuizLinks" class="btn px-3 py-2 rounded-lg bg-[#0ea5a3]">Open Quizizz / Kahoot Create</button>
+            <button id="btnExportQuiz" class="btn px-3 py-2 rounded-lg bg-[#2563eb]">Export Quiz as TXT</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right / Sidebar -->
+      <aside class="glass p-5 rounded-2xl">
+        <h3 class="text-lg font-semibold mb-2">Teaching Learning Materials (TLM)</h3>
+        <div id="tlmList" class="space-y-2 mb-4">
+          <!-- TLM items inserted by JS -->
+        </div>
+
+        <h3 class="text-lg font-semibold mb-2">Useful Teaching Links</h3>
+        <ul class="text-sm text-blue-300 mb-4 space-y-2">
+          <li><a href="https://drive.google.com" target="_blank" rel="noreferrer">Google Drive</a></li>
+          <li><a href="https://quizizz.com" target="_blank" rel="noreferrer">Quizizz</a></li>
+          <li><a href="https://kahoot.com" target="_blank" rel="noreferrer">Kahoot!</a></li>
+          <li><a href="https://www.mentimeter.com" target="_blank" rel="noreferrer">Mentimeter</a></li>
+          <li><a href="https://calendar.google.com" target="_blank" rel="noreferrer">Weekly Planner</a></li>
+        </ul>
+
+        <h3 class="text-lg font-semibold mb-2">Local Dashboard</h3>
+        <div class="mb-2 text-sm text-gray-300">Saved lesson plans (local only)</div>
+        <div id="savedList" class="space-y-2 max-h-64 overflow-auto"></div>
+        <div class="mt-3 flex gap-2">
+          <button id="btnClearAll" class="btn px-3 py-2 rounded-lg bg-[#ef4444] text-white">Delete All</button>
+          <button id="btnImport" class="btn px-3 py-2 rounded-lg bg-[#111827]">Import (JSON)</button>
+          <input id="fileImport" type="file" accept=".json" class="hidden">
+        </div>
+      </aside>
+    </main>
+
+    <!-- Preview/print header (used for print) -->
+    <div id="printArea" class="hidden print-header">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong>Let's Learn with Ankit Khare</strong><br>
+          <small style="color:#666">Empowering Teachers, Inspiring Minds</small>
+        </div>
+        <div style="text-align:right">
+          <small id="printMeta" style="color:#666"></small>
+        </div>
+      </div>
+      <hr style="margin-top:8px;border:none;border-top:1px solid #ddd;">
+    </div>
+
+    <!-- Preview / Lesson Plan output for quick download -->
+    <section class="glass p-4 rounded-2xl mt-6">
+      <h3 class="text-lg font-semibold mb-2">Preview</h3>
+      <pre id="preview" class="whitespace-pre-wrap p-3 rounded-lg bg-[#071428] border border-white/6 text-sm" style="min-height:120px;"></pre>
+    </section>
+
+    <footer class="text-center text-gray-400 mt-6 mb-4 text-sm">
+      © <span id="year"></span> Let's Learn with Ankit Khare
+    </footer>
+  </div>
+
+  <!-- Brainstorm modal -->
+  <div id="brainModal" class="fixed inset-0 hidden items-center justify-center bg-black bg-opacity-60 z-50">
+    <div class="bg-[#071428] rounded-2xl p-6 w-full max-w-2xl glass">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-semibold">Brainstorming Session</h4>
+        <button id="closeBrain" class="text-sm text-gray-400">Close</button>
+      </div>
+      <p class="text-sm text-gray-300 mb-3">Prompt: "How can we make this lesson more experiential and inclusive?" (Invite colleagues and capture ideas.)</p>
+      <textarea id="brainNotes" rows="6" class="w-full p-3 rounded-lg bg-[#0b1220] border border-white/6 mb-3"></textarea>
+      <div class="flex items-center gap-3">
+        <button id="saveBrain" class="btn px-3 py-2 rounded-lg bg-[#0ea5a3]">Save Notes</button>
+        <div class="ml-auto flex gap-2 items-center">
+          <label class="text-sm text-gray-300 mr-2">Timer (mins)</label>
+          <input id="brainTimer" type="number" min="1" value="10" class="w-20 p-2 rounded bg-[#0b1220] border border-white/6 text-sm">
+          <button id="startTimer" class="btn px-3 py-2 rounded-lg bg-[#2563eb]">Start</button>
+          <div id="timerDisplay" class="text-sm text-gray-300 ml-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Basic app state and helpers
+    const tlmItems = [
+      'Flashcards (vocab / math facts)',
+      'Realia (real objects)',
+      'Storybooks / Big books',
+      'Charts & Posters',
+      'Role-play costumes & props',
+      'Worksheets (differentiated)',
+      'Hands-on kits (science/STEM)',
+      'Interactive whiteboard slides',
+      'Rubrics & observation checklists',
+      'Peer learning cards'
+    ];
+
+    // Insert TLM list
+    const tlmListEl = document.getElementById('tlmList');
+    tlmItems.forEach((t, i) => {
+      const id = 'tlm_'+i;
+      const wrapper = document.createElement('label');
+      wrapper.className = 'flex justify-between items-center p-2 rounded-lg border border-white/6 hover:bg-white/2 cursor-pointer';
+      wrapper.innerHTML = `
+        <span class="text-sm">${t}</span>
+        <input type="checkbox" data-tlm="${t}">
+      `;
+      tlmListEl.appendChild(wrapper);
+    });
+
+    // Elements
+    const inputGrade = document.getElementById('inputGrade');
+    const inputSubject = document.getElementById('inputSubject');
+    const inputDuration = document.getElementById('inputDuration');
+    const inputOutcomes = document.getElementById('inputOutcomes');
+    const inputCompetencies = document.getElementById('inputCompetencies');
+    const inputPrior = document.getElementById('inputPrior');
+    const inputActivities = document.getElementById('inputActivities');
+    const inputAssessment = document.getElementById('inputAssessment');
+    const inputDifferentiation = document.getElementById('inputDifferentiation');
+    const inputWorksheet = document.getElementById('inputWorksheet');
+    const preview = document.getElementById('preview');
+    const yearEl = document.getElementById('year');
+    yearEl.textContent = new Date().getFullYear();
+
+    // Saved plans UI
+    const savedList = document.getElementById('savedList');
+
+    function gatherSelectedTLM() {
+      return Array.from(document.querySelectorAll('#tlmList input[type=checkbox]'))
+        .filter(i => i.checked)
+        .map(i => i.getAttribute('data-tlm'));
+    }
+
+    function generateLessonText(plan = null) {
+      const p = plan || {
+        grade: inputGrade.value || '',
+        subject: inputSubject.value || '',
+        duration: inputDuration.value || '',
+        outcomes: inputOutcomes.value || '',
+        competencies: inputCompetencies.value || '',
+        prior: inputPrior.value || '',
+        activities: inputActivities.value || '',
+        assessment: inputAssessment.value || '',
+        differentiation: inputDifferentiation.value || '',
+        worksheet: inputWorksheet.value || '',
+        tlms: gatherSelectedTLM(),
+        quiz: document.getElementById('quizTemplate').value || ''
+      };
+      let text = `Lesson Plan — Let's Learn with Ankit Khare\n\nGrade/Level: ${p.grade}\nSubject: ${p.subject}\nDuration: ${p.duration}\n\nAligned to: NCF | NEP 2020 | CBSE (adapt to school scheme)\n\nLearning Outcomes:\n${p.outcomes || '- Add measurable outcomes'}\n\nKey Competencies:\n${p.competencies || '- Communication, Collaboration, Critical thinking, Creativity'}\n\nPrior Knowledge / Links to Curriculum:\n${p.prior || '- Connections to previous lessons or experiences'}\n\nTeaching & Learning Materials (TLM):\n${(p.tlms && p.tlms.length) ? p.tlms.map(t => '- '+t).join('\\n') : '- None selected'}\n\nClassroom Activities:\n${p.activities || '- Activities here'}\n\nAssessment / Evidence:\n${p.assessment || '- Formative checks, observation, rubric-based assessment'}\n\nDifferentiation / Inclusion Strategies:\n${p.differentiation || '- Scaffolds for learners who need them; extension for advanced learners'}\n\nWorksheet / Practice:\n${p.worksheet || '- Add worksheet tasks or practice items'}\n\nQuiz Template (editable):\n${p.quiz || '- Generate a quiz template below'}\n\nReflection & Next Steps:\n- What worked?\n- What to change next lesson?\n\nCreated with ❤️ by Let's Learn with Ankit Khare`;
+      return text;
+    }
+
+    function updatePreview() {
+      preview.textContent = generateLessonText();
+    }
+    // Initial preview
+    updatePreview();
+
+    // Auto-generate quiz templates
+    document.getElementById('btnGenQuiz').addEventListener('click', () => {
+      const subj = document.getElementById('quizSubject').value;
+      const qTemplates = {
+        English: `Quiz - English\n1. Choose the correct article: ___ apple. (a) a (b) an (c) the\n2. Identify the noun: \"The cat jumps.\" (short answer)\n3. Match rhyming words.\n4. Fill the blanks with verbs.\n5. Rearrange the words to make a sentence.`,
+        Math: `Quiz - Math\n1. 5 + 3 = ?\n2. Which is greater: 12 or 9?\n3. Draw a triangle and label its sides.\n4. Identify even numbers: 2, 3, 4, 5.\n5. Solve: 4 × 2.`,
+        Science: `Quiz - Science\n1. What do plants need to grow?\n2. Name 3 parts of a plant.\n3. True/False: The sun is a planet.\n4. What is the source of oxygen?\n5. Draw living and non-living things.`,
+        Social: `Quiz - Social Studies\n1. What is the capital of India?\n2. Name a festival celebrated in your state.\n3. Who is the Father of the Nation?\n4. Identify community helpers.\n5. Match country and national symbol.`,
+        General: `Quiz - General\n1. Define key term.\n2. True/False question.\n3. Short answer.\n4. Match the items.\n5. Fill in the blanks.`
+      };
+      const txt = qTemplates[subj] || qTemplates['General'];
+      document.getElementById('quizTemplate').value = txt;
+      // set quiz create links
+      const title = encodeURIComponent((inputSubject.value || subj) + ' Quiz');
+      document.getElementById('btnQuizLinks').dataset.links = `https://quizizz.com/create/quiz?title=${title}\nhttps://kahoot.com/create/`;
+    });
+
+    // Quiz links button
+    document.getElementById('btnQuizLinks').addEventListener('click', () => {
+      const ds = document.getElementById('btnQuizLinks').dataset.links;
+      if (!ds) { alert('Generate the template first.'); return; }
+      const parts = ds.split('\\n');
+      window.open(parts[0], '_blank');
+      window.open(parts[1], '_blank');
+    });
+
+    // Export quiz as txt
+    document.getElementById('btnExportQuiz').addEventListener('click', () => {
+      const quizText = document.getElementById('quizTemplate').value || 'No quiz template.';
+      const blob = new Blob([quizText], {type: 'text/plain;charset=utf-8'});
+      saveAs(blob, (inputSubject.value || 'quiz') + '-quiz.txt');
+    });
+
+    // Buttons: add sample activity, quick nursery
+    document.getElementById('btnAddActivitySample').addEventListener('click', () => {
+      inputActivities.value += '\n- Hands-on group task: learners build a model/poster.';
+      updatePreview();
+    });
+    document.getElementById('btnQuickNursery').addEventListener('click', () => {
+      inputGrade.value = 'Nursery';
+      inputSubject.value = 'English';
+      inputDuration.value = '20 minutes';
+      inputOutcomes.value = '1. Recognise 5 familiar words through pictures.\n2. Listen and respond to a short story.\n3. Attempt to trace simple letters.';
+      inputCompetencies.value = 'Listening, emergent literacy, fine motor skills';
+      inputPrior.value = 'Exposure to picture books at home';
+      inputActivities.value = '1. Photo flash: show 5 picture cards\n2. Story circle with big book\n3. Tracing activity with sand tray\n4. Sing-along phonics rhyme';
+      inputAssessment.value = 'Teacher observation checklist: attention, attempt, participation';
+      inputDifferentiation.value = 'Use larger pictures and one-to-one scaffolding';
+      document.querySelectorAll('#tlmList input[type=checkbox]').forEach(i => { i.checked = false; });
+      document.querySelectorAll('#tlmList input[type=checkbox]').forEach((i, idx) => { if(idx<3) i.checked = true; });
+      updatePreview();
+    });
+
+    // Save lesson plan to localStorage
+    function loadSavedPlans() {
+      const data = JSON.parse(localStorage.getItem('llw_plans_v1') || '[]');
+      savedList.innerHTML = '';
+      data.forEach((p, idx) => {
+        const item = document.createElement('div');
+        item.className = 'p-2 rounded-lg border border-white/6 flex items-center justify-between bg-[#071428]';
+        item.innerHTML = `<div class="text-sm">
+          <div class="font-medium">${p.grade} • ${p.subject}</div>
+          <div class="text-xs text-gray-300">${p.date}</div>
+        </div>
+        <div class="flex gap-2">
+          <button data-load="${idx}" class="px-2 py-1 rounded bg-[#10b981] text-black text-xs">Load</button>
+          <button data-export="${idx}" class="px-2 py-1 rounded bg-[#2563eb] text-white text-xs">Export</button>
+          <button data-delete="${idx}" class="px-2 py-1 rounded bg-[#ef4444] text-white text-xs">Delete</button>
+        </div>`;
+        savedList.appendChild(item);
+      });
+    }
+
+    document.getElementById('btnSave').addEventListener('click', () => {
+      const data = JSON.parse(localStorage.getItem('llw_plans_v1') || '[]');
+      const plan = {
+        id: Date.now(),
+        grade: inputGrade.value,
+        subject: inputSubject.value,
+        duration: inputDuration.value,
+        outcomes: inputOutcomes.value,
+        competencies: inputCompetencies.value,
+        prior: inputPrior.value,
+        activities: inputActivities.value,
+        assessment: inputAssessment.value,
+        differentiation: inputDifferentiation.value,
+        worksheet: inputWorksheet.value,
+        tlms: gatherSelectedTLM(),
+        quiz: document.getElementById('quizTemplate').value,
+        date: new Date().toLocaleString()
+      };
+      data.unshift(plan);
+      localStorage.setItem('llw_plans_v1', JSON.stringify(data));
+      loadSavedPlans();
+      updatePreview();
+      alert('Lesson plan saved locally.');
+    });
+
+    // Handle saved list actions
+    savedList.addEventListener('click', (e) => {
+      const idxLoad = e.target.getAttribute('data-load');
+      const idxExport = e.target.getAttribute('data-export');
+      const idxDelete = e.target.getAttribute('data-delete');
+      const data = JSON.parse(localStorage.getItem('llw_plans_v1') || '[]');
+      if (idxLoad !== null) {
+        const plan = data[idxLoad];
+        inputGrade.value = plan.grade; inputSubject.value = plan.subject; inputDuration.value = plan.duration;
+        inputOutcomes.value = plan.outcomes; inputCompetencies.value = plan.competencies;
+        inputPrior.value = plan.prior; inputActivities.value = plan.activities;
+        inputAssessment.value = plan.assessment; inputDifferentiation.value = plan.differentiation;
+        inputWorksheet.value = plan.worksheet;
+        // set TLM checkboxes
+        document.querySelectorAll('#tlmList input[type=checkbox]').forEach(i => i.checked = plan.tlms.includes(i.getAttribute('data-tlm')));
+        document.getElementById('quizTemplate').value = plan.quiz || '';
+        updatePreview();
+      }
+      if (idxExport !== null) {
+        const plan = data[idxExport];
+        const txt = generateLessonText(plan);
+        const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
+        saveAs(blob, `${plan.grade}-${plan.subject}-lessonplan.txt`);
+      }
+      if (idxDelete !== null) {
+        if(confirm('Delete this saved plan?')) {
+          data.splice(idxDelete,1);
+          localStorage.setItem('llw_plans_v1', JSON.stringify(data));
+          loadSavedPlans();
+        }
+      }
+    });
+
+    // Delete all
+    document.getElementById('btnClearAll').addEventListener('click', () => {
+      if(confirm('Delete ALL saved plans permanently?')) {
+        localStorage.removeItem('llw_plans_v1');
+        loadSavedPlans();
+      }
+    });
+
+    // Import (JSON)
+    document.getElementById('btnImport').addEventListener('click', () => {
+      document.getElementById('fileImport').click();
+    });
+    document.getElementById('fileImport').addEventListener('change', (ev) => {
+      const f = ev.target.files[0];
+      if(!f) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const arr = JSON.parse(e.target.result);
+          if(Array.isArray(arr)) {
+            localStorage.setItem('llw_plans_v1', JSON.stringify(arr.concat(JSON.parse(localStorage.getItem('llw_plans_v1') || '[]'))));
+            loadSavedPlans();
+            alert('Imported plans added to local storage.');
+          } else alert('Invalid file format (expected JSON array).');
+        } catch(err) { alert('Invalid JSON file.'); }
+      };
+      reader.readAsText(f);
+    });
+
+    // Clear form
+    document.getElementById('btnClear').addEventListener('click', () => {
+      if(!confirm('Clear the form?')) return;
+      inputGrade.value=''; inputSubject.value=''; inputDuration.value='';
+      inputOutcomes.value=''; inputCompetencies.value=''; inputPrior.value='';
+      inputActivities.value=''; inputAssessment.value=''; inputDifferentiation.value=''; inputWorksheet.value='';
+      document.querySelectorAll('#tlmList input[type=checkbox]').forEach(i => i.checked=false);
+      document.getElementById('quizTemplate').value='';
+      updatePreview();
+    });
+
+    // Copy to clipboard
+    document.getElementById('btnCopy').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(generateLessonText());
+        alert('Lesson plan copied to clipboard.');
+      } catch (e) {
+        alert('Unable to copy automatically — please highlight the preview and copy manually.');
+      }
+    });
+
+    // PDF, Word, PPT exports
+    document.getElementById('btnPdf').addEventListener('click', () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({unit:'pt', format:'a4'});
+      const text = generateLessonText();
+      const lines = doc.splitTextToSize(text, 520);
+      doc.setFontSize(12);
+      doc.text(lines, 40, 60);
+      doc.save((inputGrade.value || 'Lesson') + '-' + (inputSubject.value || 'plan') + '.pdf');
+    });
+    document.getElementById('btnWord').addEventListener('click', () => {
+      const text = generateLessonText();
+      const blob = new Blob([text], { type: 'application/msword;charset=utf-8' });
+      saveAs(blob, (inputGrade.value || 'Lesson') + '-' + (inputSubject.value || 'plan') + '.doc');
+    });
+    document.getElementById('btnPpt').addEventListener('click', () => {
+      const pptx = new PptxGenJS();
+      const slide = pptx.addSlide();
+      slide.addText("Let's Learn with Ankit Khare", {x:0.5, y:0.3, fontSize:24, bold:true, color:'363636'});
+      slide.addText(`${inputGrade.value || ''} — ${inputSubject.value || ''}`, {x:0.5, y:0.8, fontSize:18});
+      const lines = generateLessonText().split('\\n');
+      slide.addText(lines.slice(0,30).join('\\n'), {x:0.5, y:1.2, fontSize:12, color:'505050', w:9});
+      pptx.writeFile({fileName: (inputGrade.value || 'Lesson') + '-' + (inputSubject.value || 'plan') + '.pptx'});
+    });
+
+    // Print preview
+    document.getElementById('btnPrint').addEventListener('click', () => {
+      // fill print meta
+      const meta = `${inputGrade.value || ''} • ${inputSubject.value || ''} • ${new Date().toLocaleDateString()}`;
+      document.getElementById('printMeta').textContent = meta;
+      // create printable content in new window
+      const printWindow = window.open('', '_blank', 'width=900,height=700');
+      const content = `
+        <html><head><title>Print - Lesson Plan</title>
+        <style>
+          body{font-family: Arial, sans-serif; color:#111;}
+          .header{display:flex; justify-content:space-between; border-bottom:1px solid #ccc; padding-bottom:8px; margin-bottom:10px;}
+          h1{font-size:20px; margin:0; color:#222;}
+          pre{white-space:pre-wrap; font-size:12px;}
+        </style>
+        </head><body>
+        <div class="header">
+          <div><h1>Let's Learn with Ankit Khare</h1><div>Empowering Teachers, Inspiring Minds</div></div>
+          <div>${meta}</div>
+        </div>
+        <pre>${escapeHtml(generateLessonText()).replace(/\\n/g,'\\n')}</pre>
+        </body></html>`;
+      printWindow.document.write(content);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(()=>printWindow.print(), 400);
+    });
+
+    function escapeHtml(unsafe) {
+      return unsafe.replace(/[&<"']/g, function(m) {
+        return ({'&':'&amp;','<':'&lt;','"':'&quot;',"'":'&#039;'}[m]);
+      });
+    }
+
+    // Brainstorm modal behavior
+    const brainModal = document.getElementById('brainModal');
+    document.getElementById('btnBrain').addEventListener('click', () => {
+      brainModal.classList.remove('hidden');
+      brainModal.classList.add('flex');
+      document.getElementById('brainNotes').focus();
+    });
+    document.getElementById('closeBrain').addEventListener('click', () => {
+      brainModal.classList.add('hidden');
+    });
+    document.getElementById('saveBrain').addEventListener('click', () => {
+      const notes = document.getElementById('brainNotes').value;
+      // Append to activities as teacher notes for reference
+      if(notes.trim()) {
+        inputActivities.value += `\\nBrainstorm notes: ${notes}`;
+        document.getElementById('brainNotes').value = '';
+        alert('Brainstorm notes saved to Activities field.');
+        updatePreview();
+      }
+      brainModal.classList.add('hidden');
+    });
+
+    // Timer
+    let countdownInterval = null;
+    document.getElementById('startTimer').addEventListener('click', () => {
+      const mins = parseInt(document.getElementById('brainTimer').value) || 5;
+      let remaining = mins * 60;
+      clearInterval(countdownInterval);
+      document.getElementById('timerDisplay').textContent = formatTime(remaining);
+      countdownInterval = setInterval(() => {
+        remaining--;
+        document.getElementById('timerDisplay').textContent = formatTime(remaining);
+        if(remaining <=0) {
+          clearInterval(countdownInterval);
+          alert('Brainstorm timer ended.');
+          document.getElementById('timerDisplay').textContent = '';
+        }
+      }, 1000);
+    });
+    function formatTime(s) {
+      const mm = String(Math.floor(s/60)).padStart(2,'0');
+      const ss = String(s%60).padStart(2,'0');
+      return `${mm}:${ss}`;
+    }
+
+    // Update preview on key changes
+    ['inputGrade','inputSubject','inputDuration','inputOutcomes','inputCompetencies','inputPrior','inputActivities','inputAssessment','inputDifferentiation','inputWorksheet'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('input', updatePreview);
+    });
+    document.getElementById('quizTemplate').addEventListener('input', updatePreview);
+
+    // file saver (FileSaver included via CDN)
+    const saveAs = window.saveAs;
+
+    // Initialize saved list on load
+    loadSavedPlans();
+    updatePreview();
+
+    // Utility: add simple paste handler to preview text to keep preview updated
+    document.addEventListener('paste', updatePreview);
+  </script>
+</body>
+</html>
